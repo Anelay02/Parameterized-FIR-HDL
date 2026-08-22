@@ -27,14 +27,6 @@ FIR filters; this document covers only the Welch implementation.
 └── Welch.md
 ```
 
-| Item | Role |
-|---|---|
-| `rtl/Welch.v` and `rtl/Welch.vhd` | Hardware implementations of the windowing stage |
-| `tb/tb_Welch.v` and `tb/tb_Welch.vhd` | HDL testbenches using the same parameter set and stimulus |
-| `python/welch.py` | Produces time- and frequency-domain illustrations |
-| `python/welch_model.py` | Reproduces the finite-width RTL operations and compares them with the HDL CSV |
-| `results/tb_Welch.csv` | Captured input and output samples from the testbench |
-
 ## Theory
 
 Windowing multiplies each input sample by a coefficient that varies across a
