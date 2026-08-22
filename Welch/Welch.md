@@ -4,8 +4,6 @@ This project implements a parametrizable fixed-point **Welch window** as a
 sample-by-sample FIR weighting stage. It is one member of a larger family of
 FIR filters; this document covers only the Welch implementation.
 
-The current RTL is Verilog-2001. A matching VHDL-2008 implementation and
-testbench are intended to be added alongside it.
 
 ## Contents
 
@@ -21,11 +19,11 @@ testbench are intended to be added alongside it.
 ├── results/
 │   └── tb_Welch.csv         # Reference testbench output
 ├── rtl/
-│   ├── Welch.v              # Verilog-2001 implementation
-│   └── Welch.vhd             # Planned VHDL-2008 implementation
+│   ├── Welch.v              # Verilog implementation
+│   └── Welch.vhd             # Planned VHDL implementation
 ├── tb/
 │   ├── tb_Welch.v           # Verilog testbench
-│   └── tb_Welch.vhd          # Planned VHDL-2008 testbench
+│   └── tb_Welch.vhd          # Planned VHDL testbench
 └── Welch.md
 ```
 
