@@ -13,7 +13,7 @@
 
 module Welch #(
 	parameter integer INPUT_SIZE  = 16,			// Input data width
-	parameter integer WINDOW_LEN  = 64,			// Samples per window frame (only powers of 2 !)
+	parameter integer WINDOW_LEN  = 256,		// Samples per window frame (only powers of 2 !)
 	parameter integer OUTPUT_SIZE = 16 			// Output data width
 )(
     input                          i_clk,      	// Input clock
