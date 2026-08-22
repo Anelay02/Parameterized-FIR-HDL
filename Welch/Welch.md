@@ -20,10 +20,10 @@ FIR filters; this document covers only the Welch implementation.
 │   └── tb_Welch.csv         # Reference testbench output
 ├── rtl/
 │   ├── Welch.v              # Verilog implementation
-│   └── Welch.vhd             # Planned VHDL implementation
+│   └── Welch.vhd            # VHDL implementation
 ├── tb/
 │   ├── tb_Welch.v           # Verilog testbench
-│   └── tb_Welch.vhd          # Planned VHDL testbench
+│   └── tb_Welch.vhd         # VHDL testbench
 └── Welch.md
 ```
 
