@@ -98,10 +98,11 @@ With `P = PRECISION` fractional bits, a real value is stored as
 `P` is picked with the conservative rule
 
 $$
-P = \max\left(\texttt{OUTPUT\_SIZE}+1,\;\log_2(N)-1\right).
+P = \max(O + 1,\ \log_2(N) - 1),
 $$
 
-Each term protects a different thing:
+where `O` is `OUTPUT_SIZE` and `N` is `WINDOW_LEN`. Each term protects a
+different thing:
 
 - **`OUTPUT_SIZE + 1`** keeps the coefficient's own rounding error smaller
   than one output LSB, so quantizing the window doesn't add visible error on
