@@ -7,3 +7,5 @@ The goal of this repository is to provide reusable, configurable FIR filter impl
 > 🚧 **Work in Progress**
 >
 > This repository is actively being developed. More filter architectures, window functions, testbenches, and documentation will be added over time.
+
+This project was developed with AI assistance.
