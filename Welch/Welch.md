@@ -1,11 +1,7 @@
 # Welch Window FIR Filter
 
 This project implements a parametrizable fixed-point **Welch window** as a
-sample-by-sample FIR weighting stage. It is one member of a larger family of
-FIR filters; this document covers only the Welch implementation.
-
-The current RTL is Verilog-2001. A matching VHDL-2008 implementation and
-testbench are intended to be added alongside it.
+sample-by-sample FIR weighting stage. The current RTL is a Verilog-2001 and a matching VHDL-2008 implementation (including testbenches).
 
 ## Contents
 
