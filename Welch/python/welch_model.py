@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # =============================================================================
 # File: welch_model.py
+# Author: Ayoub el idrissi Achraf
 # Description: Reproduces and compares the output of the HDL testbench.
 # =============================================================================
 
-import os
 import sys
+from pathlib import Path
 import matplotlib.pyplot as plt
 
 
@@ -20,8 +21,10 @@ CLK_PERIOD_NS = 10.0
 RUN_SAMPLES   = 4 * WINDOW_LEN
 SIGNAL_STEP   = 257       # input = (sample_index * SIGNAL_STEP) mod 2^INPUT_SIZE
 
-CSV_PATH = "tb_Welch.csv"
-PLOT_PATH = "welch_compare.png"
+RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
+CSV_PATH = RESULTS_DIR / "tb_Welch.csv"
+IMG_DIR = Path(__file__).resolve().parents[1] / "Img"
+PLOT_PATH = IMG_DIR / "welch_compare.png"
 
 
 # =============================================================================
@@ -33,33 +36,52 @@ def welch_new(window_len, input_size, output_size):
     assert window_len >= 2 and (window_len & (window_len - 1)) == 0
     assert output_size <= input_size
     precision = max(output_size + 1, window_len.bit_length() - 2)
-    return {
+    state = {
         "WINDOW_LEN": window_len,
         "INPUT_SIZE": input_size,
         "OUTPUT_SIZE": output_size,
         "PRECISION": precision,
         "ADDR_WIDTH": window_len.bit_length() - 1,
-        "samples_counter": 0,
+        "delay_line": [0] * (window_len - 1),
         "o_data": 0,
         "o_valid": 0,
     }
+    state["COEFFICIENT_SUM"] = sum(
+        welch_raw_coefficient(state, tap) for tap in range(window_len)
+    )
+    return state
+
+
+def welch_raw_coefficient(state, tap_index):
+    """Return the unnormalised Q(PRECISION) Welch coefficient for one tap."""
+    p = state["PRECISION"]
+    addr_width = state["ADDR_WIDTH"]
+    x_int = tap_index << (p + 1 - addr_width)
+    term1 = (x_int << 1) & ((1 << (p + 2)) - 1)
+    square = (x_int * x_int + (1 << (p - 1))) & ((1 << (2 * p + 2)) - 1)
+    term2 = (square >> p) & ((1 << (p + 2)) - 1)
+    return (term1 - term2) & ((1 << (p + 1)) - 1)
+
+
+def welch_coefficient(state, tap_index):
+    """Return a rounded, unity-gain Q(PRECISION) FIR coefficient."""
+    p = state["PRECISION"]
+    return ((welch_raw_coefficient(state, tap_index) << p) +
+            (state["COEFFICIENT_SUM"] >> 1)) // state["COEFFICIENT_SUM"]
 
 
 def welch_step(state, i_data, i_valid):
-    """Simulate one rising edge, including every finite-width RTL operation."""
+    """Simulate one rising edge of the zero-padded sliding-window FIR."""
     p = state["PRECISION"]
-    counter = state["samples_counter"]
     if i_valid:
-        x_int = (counter << (p + 1 - state["ADDR_WIDTH"])) & ((1 << (p + 1)) - 1)
-        term1 = (x_int << 1) & ((1 << (p + 1)) - 1)
-        square = (x_int * x_int + (1 << (p - 1))) & ((1 << (2 * p + 2)) - 1)
-        term2 = (square >> p) & ((1 << (p + 1)) - 1)
-        coefficient = (term1 - term2) & ((1 << (p + 1)) - 1)
-        product = (coefficient * i_data) & ((1 << (state["INPUT_SIZE"] + p + 1)) - 1)
-        # Equivalent to product[PRODUCT_WIDTH-2 -: OUTPUT_SIZE] in Welch.v.
-        state["o_data"] = (product >> (p + state["INPUT_SIZE"] - state["OUTPUT_SIZE"])) \
-                          & ((1 << state["OUTPUT_SIZE"]) - 1)
-        state["samples_counter"] = (counter + 1) % state["WINDOW_LEN"]
+        # Match Welch.v: i_data is x[n], delay_line[k-1] is x[n-k].
+        accumulator = welch_coefficient(state, 0) * i_data
+        for tap in range(1, state["WINDOW_LEN"]):
+            accumulator += welch_coefficient(state, tap) * state["delay_line"][tap - 1]
+        accumulator &= (1 << (state["INPUT_SIZE"] + p + 1 + state["ADDR_WIDTH"])) - 1
+        scaled_output = accumulator >> p
+        state["o_data"] = min(scaled_output, (1 << state["OUTPUT_SIZE"]) - 1)
+        state["delay_line"] = [i_data] + state["delay_line"][:-1]
     state["o_valid"] = 1 if i_valid else 0
 
 
@@ -152,6 +174,7 @@ def _style_axes(axis):
 
 def plot(ref_rows, py_rows, filename=PLOT_PATH):
     """Overlay the Welch RTL CSV and the bit-exact Python output."""
+    filename.parent.mkdir(parents=True, exist_ok=True)
     ref_valid = [row for row in ref_rows if row[3]]
     py_valid = [row for row in py_rows if row[3]]
     fig, axis = plt.subplots(figsize=(15, 4.5))
@@ -190,14 +213,13 @@ def plot(ref_rows, py_rows, filename=PLOT_PATH):
 def main():
     print(f"WINDOW_LEN={WINDOW_LEN} INPUT_SIZE={INPUT_SIZE} OUTPUT_SIZE={OUTPUT_SIZE}")
     print(f"RUN_SAMPLES={RUN_SAMPLES} SIGNAL_STEP={SIGNAL_STEP}")
-    if not os.path.exists(CSV_PATH):
+    if not CSV_PATH.exists():
         print(f"(reference CSV '{CSV_PATH}' not found - run tb_Welch.v first)")
         sys.exit(1)
     ref_rows = read_csv(CSV_PATH)
     py_rows = run_testbench()
     compare(ref_rows, py_rows, f"{CSV_PATH} vs Python model")
     plot(ref_rows, py_rows)
-    plt.show()
 
 
 if __name__ == "__main__":
